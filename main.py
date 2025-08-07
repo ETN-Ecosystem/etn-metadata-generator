@@ -8,8 +8,10 @@ from PIL import Image, ImageDraw, ImageFont
 BASE_URL = "https://u-nft.etnecosystem.org/api"
 BACKGROUND_IMAGE_PATH = "assets/background.png"
 FONT_PATH = "assets/font.ttf"
-FONT_SIZE = 100
-TEXT_COLOR = (255, 255, 255) # White
+FONT_SIZE = 110
+TEXT_COLOR = (0, 0, 0) # Black
+SHADOW_COLOR = (255, 255, 255) # White
+SHADOW_OFFSET = (5, 7)
 
 app = FastAPI(
     title="ETN Username Metadata API",
@@ -38,8 +40,9 @@ async def get_username_json(username: str):
     """
     Generates TEP-64 compliant JSON metadata for a given ETN Username.
     """
+    display_name = f"@{username}"
     metadata = NftMetadata(
-        name=username,
+        name=display_name,
         description="An ETN Ecosystem Username.",
         image=f"{BASE_URL}/{username}.png",
         attributes=[],
@@ -65,14 +68,23 @@ async def get_username_image(username: str):
         draw = ImageDraw.Draw(background)
         img_width, img_height = background.size
 
+        # Add @ symbol to username
+        display_text = f"@{username}"
+
         # Calculate text size and position to center it
-        text_bbox = draw.textbbox((0, 0), username, font=font)
+        text_bbox = draw.textbbox((0, 0), display_text, font=font)
         text_width = text_bbox[2] - text_bbox[0]
         text_height = text_bbox[3] - text_bbox[1]
-        position = ((img_width - text_width) / 2, (img_height - text_height) / 2)
+        
+        # Adjust position to be slightly higher than center
+        position = ((img_width - text_width) / 2, (img_height - text_height) / 2.1)
+        shadow_position = (position[0] + SHADOW_OFFSET[0], position[1] + SHADOW_OFFSET[1])
 
+        # Draw the shadow
+        draw.text(shadow_position, display_text, font=font, fill=SHADOW_COLOR)
+        
         # Draw the text onto the image
-        draw.text(position, username, font=font, fill=TEXT_COLOR)
+        draw.text(position, display_text, font=font, fill=TEXT_COLOR)
 
         # Save the image to a bytes buffer
         img_byte_arr = io.BytesIO()
